@@ -1,0 +1,37 @@
+workflows:
+  ios-release:
+    name: iOS Release IPA
+    max_build_duration: 60
+    environment:
+      xcode: latest
+      vars:
+        XCODE_PROJECT: "player.xcodeproj"
+        XCODE_SCHEME: "player"
+        # Если у тебя scheme называется иначе — поменяй на реальное имя (см. ниже как проверить)
+    scripts:
+      - name: Resolve Swift Package Manager deps (if any)
+        script: |
+          xcodebuild -resolvePackageDependencies \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME"
+
+      - name: Build archive
+        script: |
+          xcodebuild \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Release \
+            -archivePath build/player.xcarchive \
+            archive
+
+      - name: Export IPA
+        script: |
+          xcodebuild -exportArchive \
+            -archivePath build/player.xcarchive \
+            -exportOptionsPlist exportOptions.plist \
+            -exportPath build/ipa
+    artifacts:
+      - build/ipa/*.ipa
+      - build/ipa/*.dSYM.zip
+      - $HOME/Library/Logs/DiagnosticReports/*.crash
+      - /tmp/xcodebuild_logs/*.log
